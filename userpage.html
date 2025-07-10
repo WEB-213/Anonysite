@@ -92,6 +92,11 @@
     const urlParams = new URLSearchParams(window.location.search);
     const username = urlParams.get('username');
 
+    if (!username) {
+      alert("No username provided in URL.");
+      window.location.href = "index.html";
+    }
+
     async function sendMessage() {
       const text = document.getElementById('message').value.trim();
       const btn = document.getElementById('sendBtn');
@@ -105,7 +110,6 @@
       btn.textContent = "Sending...";
 
       try {
-        // Find user by username
         const q = query(collection(db, "users"), where("username", "==", username));
         const snap = await getDocs(q);
 
@@ -119,14 +123,12 @@
         const userDoc = snap.docs[0];
         const userId = userDoc.id;
 
-        // Save message
         await addDoc(collection(db, "messages"), {
           to: userId,
           text,
           createdAt: new Date()
         });
 
-        // Redirect to confirmation page
         window.location.href = "message-sent.html";
 
       } catch (error) {
