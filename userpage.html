@@ -60,6 +60,16 @@
     .button:hover:not(:disabled) {
       background: #00dd99;
     }
+    .loading {
+      text-align: center;
+      margin-top: 20px;
+      color: #00ffaa;
+    }
+    .error {
+      text-align: center;
+      color: #ff6666;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -67,9 +77,13 @@
     <h1>Send an Anonymous Message</h1>
     <p>Share your thoughts safely and anonymously.</p>
 
-    <div class="panel">
+    <div class="panel" id="panel">
       <textarea id="message" placeholder="Type your anonymous message..."></textarea>
       <button class="button" id="sendBtn" onclick="sendMessage()">Send Message</button>
+    </div>
+
+    <div class="loading" id="loading" style="display: none;">
+      Loading user data...
     </div>
   </div>
 
@@ -97,12 +111,52 @@
       window.location.href = "index.html";
     }
 
+    let userId = null;
+
+    async function checkUserExists() {
+      document.getElementById('loading').style.display = 'block';
+
+      try {
+        const q = query(collection(db, "users"), where("username", "==", username));
+        const snap = await getDocs(q);
+
+        document.getElementById('loading').style.display = 'none';
+
+        if (snap.empty) {
+          document.getElementById('panel').innerHTML = `
+            <p class="error">
+              The user <strong>${username}</strong> was not found.<br>
+              <a href="index.html" style="color: #00ffaa;">Go back</a>
+            </p>
+          `;
+        } else {
+          const userDoc = snap.docs[0];
+          userId = userDoc.id;
+        }
+      } catch (error) {
+        console.error(error);
+        document.getElementById('panel').innerHTML = `
+          <p class="error">
+            An error occurred while loading the user.<br>
+            <a href="index.html" style="color: #00ffaa;">Go back</a>
+          </p>
+        `;
+      }
+    }
+
+    checkUserExists();
+
     async function sendMessage() {
       const text = document.getElementById('message').value.trim();
       const btn = document.getElementById('sendBtn');
-      
+
       if (!text) {
         alert('Please enter a message.');
+        return;
+      }
+
+      if (!userId) {
+        alert("Cannot send message because user was not found.");
         return;
       }
 
@@ -110,19 +164,6 @@
       btn.textContent = "Sending...";
 
       try {
-        const q = query(collection(db, "users"), where("username", "==", username));
-        const snap = await getDocs(q);
-
-        if (snap.empty) {
-          alert("User not found.");
-          btn.disabled = false;
-          btn.textContent = "Send Message";
-          return;
-        }
-
-        const userDoc = snap.docs[0];
-        const userId = userDoc.id;
-
         await addDoc(collection(db, "messages"), {
           to: userId,
           text,
@@ -130,7 +171,6 @@
         });
 
         window.location.href = "message-sent.html";
-
       } catch (error) {
         console.error(error);
         alert('Something went wrong. Please try again.');
