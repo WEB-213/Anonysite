@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Message View | AnonySite</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <!-- ✅ Load html2canvas -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #141E30, #243B55);
+      color: white;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      position: relative;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .back-button {
+      color: #00ffaa;
+      font-size: 24px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .back-button:hover {
+      color: #00dd99;
+    }
+    .panel {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 0 auto;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      text-align: center;
+      max-width: 100%;
+      word-break: break-word;
+    }
+    #messageText {
+      white-space: pre-wrap;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+    .icon-row {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 20px;
+    }
+    .icon {
+      font-size: 28px;
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+    .icon:hover {
+      color: #00dd99;
+    }
+    /* Watermark only appears during download */
+    .watermark-download {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #00ffaa;
+      font-size: 14px;
+      opacity: 0.5;
+      pointer-events: none;
+      display: none;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <span class="back-button" onclick="goBack()">
+      🔙 Back
+    </span>
+
+    <!-- ✅ No page title here anymore -->
+
+    <div class="panel" id="messagePanel">
+      <p id="messageText"></p>
+
+      <div class="icon-row">
+        <span class="icon" onclick="downloadFullPageImage()" title="Download">⬇️</span>
+        <span class="icon" onclick="archiveMessage()" title="Archive">📦</span>
+        <span class="icon" onclick="deleteMessage()" title="Delete">🗑️</span>
+        <span class="icon" onclick="reportMessage()" title="Report">🚩</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="watermark-download" id="watermarkDownload"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, updateDoc, deleteDoc
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7Q7WH201V6pl6_lZRyt1ZWNKem_b40xI",
+      authDomain: "anonysite-f796f.firebaseapp.com",
+      projectId: "anonysite-f796f",
+      storageBucket: "anonysite-f796f.appspot.com",
+      messagingSenderId: "904925513197",
+      appId: "1:904925513197:web:c466cdf1466b22b34c13e4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get("id");
+
+    let messageText = "";
+
+    async function loadMessage() {
+      const ref = doc(db, "messages", id);
+      const snapshot = await getDoc(ref);
+      if (snapshot.exists()) {
+        messageText = snapshot.data().text;
+        document.getElementById("messageText").textContent = messageText;
+      } else {
+        alert("Message not found.");
+      }
+    }
+
+    loadMessage();
+
+    async function archiveMessage() {
+      const ref = doc(db, "messages", id);
+      await updateDoc(ref, { archived: true });
+      alert("Message archived.");
+      window.location.href = "dashboard.html";
+    }
+
+    async function deleteMessage() {
+      if (confirm("Delete this message?")) {
+        await deleteDoc(doc(db, "messages", id));
+        alert("Message deleted.");
+        window.location.href = "dashboard.html";
+      }
+    }
+
+    async function reportMessage() {
+      const reason = prompt("Why are you reporting this message?");
+      if (reason) {
+        alert("Message reported! (Implement saving the report separately.)");
+      }
+    }
+
+    window.downloadFullPageImage = function () {
+      // Hide buttons, back, etc.
+      document.querySelectorAll(".icon-row, .back-button").forEach(el => el.style.display = "none");
+      
+      const watermarkEl = document.getElementById("watermarkDownload");
+      watermarkEl.textContent = "Made by Hay Jay";
+      watermarkEl.style.display = "block";
+
+      // Only capture the message panel instead of the whole body
+      const panel = document.getElementById("messagePanel");
+
+      html2canvas(panel, {
+        useCORS: true,
+        backgroundColor: null
+      }).then(canvas => {
+        // Restore buttons and watermark
+        document.querySelectorAll(".icon-row, .back-button").forEach(el => el.style.display = "");
+        watermarkEl.style.display = "none";
+
+        const link = document.createElement("a");
+        link.download = "message.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
+    }
+
+    window.goBack = function () {
+      window.location.href = "dashboard.html";
+    }
+  </script>
+</body>
+</html>

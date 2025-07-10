@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Message Sent | AnonySite</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #141E30, #243B55);
+      color: white;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 80px auto;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #00ffaa;
+    }
+
+    p {
+      margin-bottom: 30px;
+      font-size: 1.2em;
+    }
+
+    .button {
+      background: #00ffaa;
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .button:hover {
+      background: #00dd99;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎉 Message Sent!</h1>
+    <p>Your anonymous message was delivered successfully.</p>
+    <button class="button" onclick="goToHome()">Get Your Anonymous Too!</button>
+  </div>
+
+  <script>
+    function goToHome() {
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>

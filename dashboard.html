@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard | AnonySite</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #141E30, #243B55);
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .panel {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    .link-text {
+      word-break: break-all;
+      display: inline-block;
+      margin-top: 10px;
+      font-weight: bold;
+      color: #00ffaa;
+    }
+    .button {
+      background: #00ffaa;
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+    .button:hover {
+      background: #00dd99;
+    }
+    .stats {
+      text-align: center;
+      font-size: 1.2em;
+      color: #00ffaa;
+      margin-bottom: 20px;
+    }
+    .messages {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .message-card {
+      background: rgba(255, 255, 255, 0.12);
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .message-text {
+      margin-bottom: 10px;
+      word-break: break-word;
+      font-size: 16px;
+    }
+    .message-actions {
+      text-align: right;
+    }
+    .message-actions a {
+      color: #00ffaa;
+      text-decoration: none;
+      font-size: 18px;
+      margin-left: 10px;
+    }
+    .message-actions a:hover {
+      color: #00dd99;
+    }
+    .empty-state {
+      text-align: center;
+      color: #aaa;
+      font-size: 1.2em;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome, <span id="usernameHeader"></span>!</h1>
+
+    <div class="panel">
+      <h2>Your Share Link</h2>
+      <span id="shareLink" class="link-text"></span><br>
+      <button class="button" onclick="copyLink()">Copy Link</button>
+    </div>
+
+    <div class="panel stats">
+      Total Views: <span id="viewCount">0</span>
+    </div>
+
+    <div class="panel">
+      <h2>Your Messages</h2>
+      <div id="messages" class="messages"></div>
+      <div id="emptyState" class="empty-state" style="display: none;">
+        You haven’t received any messages yet.
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      collection,
+      query,
+      where,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7Q7WH201V6pl6_lZRyt1ZWNKem_b40xI",
+      authDomain: "anonysite-f796f.firebaseapp.com",
+      projectId: "anonysite-f796f",
+      storageBucket: "anonysite-f796f.appspot.com",
+      messagingSenderId: "904925513197",
+      appId: "1:904925513197:web:c466cdf1466b22b34c13e4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const usernameHeader = document.getElementById("usernameHeader");
+    const shareLinkEl = document.getElementById("shareLink");
+    const messagesDiv = document.getElementById("messages");
+    const viewCountEl = document.getElementById("viewCount");
+    const emptyStateEl = document.getElementById("emptyState");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        alert("Not logged in");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const uid = user.uid;
+      const userDoc = await getDoc(doc(db, "users", uid));
+      const username = userDoc.exists() ? userDoc.data().username : "(unknown)";
+
+      usernameHeader.textContent = username;
+      shareLinkEl.textContent = `${location.origin}/userpage.html?username=${username}`;
+
+      const messagesQuery = query(collection(db, "messages"), where("to", "==", uid));
+      const messageSnaps = await getDocs(messagesQuery);
+
+      const messages = [];
+      messageSnaps.forEach(doc => {
+        messages.push({ id: doc.id, ...doc.data() });
+      });
+
+      viewCountEl.textContent = userDoc.data().viewCount || 0;
+
+      messagesDiv.innerHTML = '';
+      if (messages.length === 0) {
+        emptyStateEl.style.display = "block";
+      } else {
+        emptyStateEl.style.display = "none";
+        messages.forEach(msg => {
+          const card = document.createElement('div');
+          card.className = 'message-card';
+          card.innerHTML = `
+            <div class="message-text">${sanitize(msg.text)}</div>
+            <div class="message-actions">
+              <a href="message-details.html?id=${msg.id}" title="View">🔍 View</a>
+            </div>
+          `;
+          messagesDiv.appendChild(card);
+        });
+      }
+    });
+
+    function copyLink() {
+      const link = shareLinkEl.textContent;
+      navigator.clipboard.writeText(link)
+        .then(() => alert('Link copied to clipboard!'))
+        .catch(err => alert('Copy failed: ' + err));
+    }
+
+    function sanitize(str) {
+      return str.replace(/[<>&]/g, c => ({
+        '<':'&lt;',
+        '>':'&gt;',
+        '&':'&amp;'
+      }[c]));
+    }
+  </script>
+</body>
+</html>

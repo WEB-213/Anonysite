@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login | AnonySite</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background: linear-gradient(to right, #141E30, #243B55);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      margin-bottom: 1rem;
+    }
+    form {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2rem;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    input {
+      background: white;
+      color: black;
+    }
+    button {
+      background: #00ffaa;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #00dd99;
+    }
+    .link {
+      margin-top: 1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Login</h1>
+  <form id="loginForm">
+    <input type="email" name="email" placeholder="Email" required />
+    <input type="password" name="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+    <div class="link">
+      No account? <a href="signup.html" style="color:#00ffaa;">Sign Up</a>
+    </div>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7Q7WH201V6pl6_lZRyt1ZWNKem_b40xI",
+      authDomain: "anonysite-f796f.firebaseapp.com",
+      projectId: "anonysite-f796f",
+      storageBucket: "anonysite-f796f.appspot.com",
+      messagingSenderId: "904925513197",
+      appId: "1:904925513197:web:c466cdf1466b22b34c13e4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const email = form.email.value.trim();
+      const password = form.password.value;
+
+      try {
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const uid = userCred.user.uid;
+
+        // Optional: fetch username from Firestore for display in dashboard
+        const userDoc = await getDoc(doc(db, "users", uid));
+        const username = userDoc.exists() ? userDoc.data().username : "";
+
+        localStorage.setItem("uid", uid);
+        localStorage.setItem("username", username);
+
+        window.location.href = "dashboard.html";
+      } catch (err) {
+        alert(err.message || "Login failed.");
+      }
+    });
+  </script>
+</body>
+</html>
